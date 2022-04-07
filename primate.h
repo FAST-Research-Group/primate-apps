@@ -24,11 +24,11 @@ concept RegField = std::is_enum_v<T> && ExtIntegral<RealType<T>>;
 #define RField(TYPE, NAME) enum class NAME : TYPE
 
 /* functions */
-#pragma primate extract
+// #pragma primate extract
 template<RegField F, ExtIntegral D>
 F Extract(D data);
 
-#pragma primate insert
+// #pragma primate insert
 template<RegField F, ExtIntegral D>
 D Insert(D data, F field);
 
@@ -37,19 +37,19 @@ D Insert(D data, F field);
  */
 // TODO: maybe put these in a macro and stick it in Program?
 
-#pragma primate input_read
+// #pragma primate input_read
 template<Reg T>
 typename T::data_t InputRead();
 
-#pragma primate input_seek
+// #pragma primate input_seek
 template<ExtIntegral N>
 void InputSeek(N num_bytes);
 
-#pragma primate output_write
+// #pragma primate output_write
 template<Reg T>
 void OutputWrite(typename T::data_t data);
 
-#pragma primate output_seek
+// #pragma primate output_seek
 template<ExtIntegral N>
 void OutputSeek(N num_bytes);
 
