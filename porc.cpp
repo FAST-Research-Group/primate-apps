@@ -176,7 +176,7 @@ void PORC::ServiceThread() {
         }
 
         idx += offset;
-        InputSeek(offset);
+        InputSeek((u32)offset);
       }
     }
     break;
@@ -280,7 +280,7 @@ void PORC::ServiceThread() {
         }
 
         idx += offset;
-        InputSeek(offset);
+        InputSeek((u32)offset);
       }
     }
     break;
@@ -372,7 +372,7 @@ void PORC::ServiceThread() {
         }
 
         idx += offset;
-        InputSeek(offset);
+        InputSeek((u32)offset);
       }
     }
     break;

@@ -163,6 +163,7 @@ struct Num {
 
   #pragma primate reg
   struct Result {
+    //TODO: Ask alex about typing
     using data_t = UInt<num_bytes + segment_bytes>;
     RField(num_t, num);
     RField(SegmentIdx, pos);
@@ -171,7 +172,9 @@ struct Num {
 
   /* blue functions */
   #pragma primate blue latch_num_ascii 1 1
-  static Result::data_t convert_ascii(Segment str);
+  static Result::data_t convert_ascii(Segment str) {
+    return 0;
+  }
 };
 
 
