@@ -1,11 +1,18 @@
+#ifndef PORC_H
+#define PORC_H
+
+#pragma once
+
 #include <iostream>
 #include <cstdint>
 #include <concepts>
 #include <typeinfo>
-
+#include <string>
+#include <vector>
 
 #include "primate.h"
 using namespace Primate;
+
 
 
 /*
@@ -25,6 +32,12 @@ using Port = UInt<port_size>;
 constexpr u32 idx_bytes = 8;
 constexpr u32 idx_size = idx_bytes * 8;
 using Idx = UInt<idx_size>;
+
+Segment str2reg(char* strSegment);
+
+void reg2str(Segment inReg, char* strSegment); 
+
+
 
 enum class ProtocolPort : Port {
   DNS   = 53,
@@ -84,6 +97,8 @@ struct DNS {
 /*
  * Blue function objects
  */
+// I could not put this inside the MSPM and i've wasted an hour on this.
+static std::vector<std::string> patternStore = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 struct MSPM {
   /* types */
@@ -98,9 +113,10 @@ struct MSPM {
   using pattern_byte_idx_t = UInt<pattern_bytes_lg2>;
   using pattern_t = UInt<pattern_size>;
 
-  enum class Op : u1 {
-      configure = 0,
-      match     = 1
+  enum class Op : u2 {
+      reset     = 0,
+      configure = 1,
+      match     = 2
   };
 
   #pragma primate reg
@@ -125,10 +141,47 @@ struct MSPM {
     RField(SegmentIdx, match_pos15);
   };
   static_assert(Reg<Result>);
-
   /* blue functions */
   #pragma primate blue MSPM 1 1
   static Result::data_t fu(Op op, pattern_idx_t idx, pattern_byte_idx_t len, Segment str) {
+
+    switch(op) {
+      case Op::reset: {
+        // patternStore = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+        patternStore.clear();
+        for(int i = 0; i < num_patterns; i++) {
+          patternStore.push_back(0);
+        }
+        break;
+      }
+      case Op::configure: {
+        char cstr[pattern_size];
+        reg2str(str, cstr);
+        patternStore[idx] = cstr;
+        break;
+      }
+      case Op::match: {
+        // Convert the input segment into a cstr
+        char cstr[pattern_size];
+        reg2str(str, cstr);
+        // convert to a regular str so we can use stl magic
+        std::string inStr = cstr;
+        Result::data_t out = 0;
+        for(int i = 0; i < num_patterns; i++) {
+            // grab the stored string
+            std::string patternStr = patternStore[i];
+            int pos = inStr.find(patternStr);
+            if(pos != std::string::npos) {
+              out |= 1 << i;
+              // this is hacky
+              out |= (pos & 0b11111) << (num_patterns + i*segment_bytes_lg2);
+            }
+        }
+        break;
+      }
+
+      default: break;
+    }
     return 0;
   }
 
@@ -197,3 +250,4 @@ struct PORC {
   void ServiceThread();
 };
 static_assert(Program<PORC>);
+#endif

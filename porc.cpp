@@ -18,7 +18,7 @@ void PORC::InitThread() {
     MSPM::configure(11, 26, MSPM::str_to_pattern("transfer_encoding: chunked"));
     MSPM::configure(12, 4, MSPM::str_to_pattern("\r\n\r\n"));
     // TODO: is there definitely a space here?
-    MSPM::configure(13, 4, MSPM::str_to_pattern("0 \r\n"));
+    MSPM::configure(13, 4, MSPM::str_to_pattern("0\r\n"));
     /* DNS */
 }
 
@@ -200,6 +200,7 @@ void PORC::ServiceThread() {
 
         switch (state) {
           case State::mode: {
+            printf("[State] HTTP::mode\n");
             MSPM::Result::data_t match = MSPM::match(input);
             MSPM::pattern_vec_t match_vec = (MSPM::pattern_vec_t) Extract<MSPM::Result::match_vec>(match);
 
@@ -230,6 +231,7 @@ void PORC::ServiceThread() {
           break;
 
           case State::m_len: {
+            printf("[State] HTTP::m_len\n");
             Num::Result::data_t num_result = Num::convert_ascii(input);
             Num::Result::num num = Extract<Num::Result::num>(num_result);
             Num::Result::pos pos = Extract<Num::Result::pos>(num_result);
@@ -241,6 +243,7 @@ void PORC::ServiceThread() {
           break;
 
           case State::m_len_hd: {
+            printf("[State] HTTP::m_len_hd\n");
             MSPM::Result::data_t match = MSPM::match(input);
             MSPM::pattern_vec_t match_vec = (MSPM::pattern_vec_t) Extract<MSPM::Result::match_vec>(match);
 
@@ -258,6 +261,7 @@ void PORC::ServiceThread() {
           break;
 
           case State::m_chnk: {
+            printf("[State] HTTP::m_chnk\n");
             MSPM::Result::data_t match = MSPM::match(input);
             MSPM::pattern_vec_t match_vec = (MSPM::pattern_vec_t) Extract<MSPM::Result::match_vec>(match);
 
@@ -271,6 +275,7 @@ void PORC::ServiceThread() {
           break;
 
           case State::end: {
+            printf("[State] HTTP::end\n");
             OutputWrite<OutputT>(idx);
             OutputSeek(idx_bytes);
 

@@ -1,23 +1,78 @@
 #include <iostream>
+#include <fstream>
+#include <string>
 #include "primate.h"
 #include "porc.h"
 
 using namespace Primate;
 
+static std::ifstream inFile("in.txt");
+
+void printWideReg(PORC::InputT::data_t inReg) {
+	for(int i = 0; i < segment_size; i++) {
+		printf("%c", (int)(0xFF & (inReg >> (8*i))));
+	}
+}
+
+Segment str2reg(char* strSegment) {
+	Segment out = 0;
+	for(int i = segment_size; i >= 0; i--) {
+		out = (out << 8) | ((int)strSegment[i]);
+	}
+	return out;
+}
+
+void reg2str(Segment inReg, char* strSegment) {
+	for(int i = segment_size; i >= 0; i--) {
+		strSegment[i] = (0xFF & (inReg >> (8*i)));
+	}
+}
+
+
 
 //Input Testing Functions
 template<>
 PORC::InputT::data_t Primate::InputRead<PORC::InputT>() {
-	// static std::ifstream inFile;
-	// if(!inFile.is_open()) {
-	// 	inFile.open("in.txt");
-	// }
+	if(!inFile.is_open()) {
+		printf("opening file\n");
+		inFile.open("in.txt");
+	}
+	if(!inFile){ 
+		printf("AHHHHH\n");
+		return (PORC::InputT::data_t)0;
+	}
+	char strSegment[segment_size+1];
+	int startPos = inFile.tellg();
+	printf("[pre-read] file at %d\n", (int)inFile.tellg());
+	inFile.read(&strSegment[0], segment_size);
+	strSegment[segment_size] = '\0';
+	inFile.seekg(startPos);
+	printf("[post-read] file at %d\n", (int)inFile.tellg());
 	PORC::InputT::data_t out = 0;
+
+	// for(int i = 0; i < segment_size; i++) {
+	// 	out = (out << 8) | ((int)strSegment[i]);
+	// }
+	out = str2reg(strSegment);
+	char str2[segment_size+1];
+	// printf("out: %c, str: %s\n", out, strSegment);
+	printf("out: ");
+	printWideReg(out);
+	reg2str(out, str2);
+	printf(", str: %s\n", str2);
+	// printf("[post-seek] file at %d\n", (int)inFile.tellg());
 	return out;
 }
 
 template<>
 void Primate::InputSeek(u32 num_bytes) {
+	if(!inFile.is_open()) {
+		printf("opening file\n");
+		inFile.open("in.txt");
+	}
+	printf("[pre-seek] file at %d\n", (int)inFile.tellg());
+	inFile.seekg(inFile.tellg()+num_bytes);
+	printf("[post-seek] file at %d\n", (int)inFile.tellg());
 
 }
 
@@ -64,6 +119,12 @@ template<>
 DNS::Byte::byte Primate::Extract(PORC::InputT::data_t input) {
 	return (DNS::Byte::byte)0;
 }
+
+template<>
+DNS::Record::type Primate::Extract(PORC::InputT::data_t input) {
+	return (DNS::Record::type)0;
+}
+
 
 template<>
 MSPM::Result::match_vec Primate::Extract(MSPM::Result::data_t input) {
@@ -159,4 +220,5 @@ template<>
 Num::Result::pos Primate::Extract(Num::Result::data_t input) {
 	return (Num::Result::pos)0;
 }
+
 
