@@ -11,9 +11,9 @@ static std::ifstream inFile("in.txt");
 void printWideReg(PORC::InputT::data_t inReg) {
 	for(int i = 0; i < segment_size; i++) {
 		if(i%4 == 0) {
-			printf(" [%d] ", i);
+			//printf(" [%d] ", i);
 		}
-		printf("%x", (int)(0x1 & (inReg >> (i))));
+		//printf("%x", (int)(0x1 & (inReg >> (i))));
 		
 	}
 }
@@ -40,21 +40,21 @@ void reg2str(Segment inReg, char* strSegment) {
 template<>
 PORC::InputT::data_t Primate::InputRead<PORC::InputT>() {
 	if(!inFile.is_open()) {
-		printf("opening file\n");
+		//printf("opening file\n");
 		inFile.open("in.txt");
 	}
 	if(!inFile){ 
-		printf("AHHHHH\n");
+		//printf("AHHHHH\n");
 		exit(0);
 		return (PORC::InputT::data_t)0;
 	}
 	char strSegment[segment_bytes+1];
 	int startPos = inFile.tellg();
-	// printf("[pre-read] file at %d\n", (int)inFile.tellg());
+	// //printf("[pre-read] file at %d\n", (int)inFile.tellg());
 	inFile.read(&strSegment[0], segment_bytes);
 	strSegment[segment_bytes] = '\0';
 	inFile.seekg(startPos);
-	// printf("[post-read] file at %d\n", (int)inFile.tellg());
+	// //printf("[post-read] file at %d\n", (int)inFile.tellg());
 	PORC::InputT::data_t out = 0;
 
 	// for(int i = 0; i < segment_size; i++) {
@@ -64,21 +64,21 @@ PORC::InputT::data_t Primate::InputRead<PORC::InputT>() {
 	out = str2reg(strSegment);
 	// char str2[segment_size+1] = "1234";
 	// out = str2reg(str2);
-	// printf("out: %c, str: %s\n", out, strSegment);
-	printf("str: %s, %d\n", strSegment, segment_size);
-	// printf("[post-seek] file at %d\n", (int)inFile.tellg());
+	// //printf("out: %c, str: %s\n", out, strSegment);
+	//printf("str: %s, %d\n", strSegment, segment_size);
+	// //printf("[post-seek] file at %d\n", (int)inFile.tellg());
 	return out;
 }
 
 template<>
 void Primate::InputSeek(u32 num_bytes) {
 	if(!inFile.is_open()) {
-		printf("opening file\n");
+		//printf("opening file\n");
 		inFile.open("in.txt");
 	}
-	printf("[pre-seek] file at %d\n", (int)inFile.tellg());
+	//printf("[pre-seek] file at %d\n", (int)inFile.tellg());
 	inFile.seekg(inFile.tellg()+num_bytes);
-	printf("[post-seek] file at %d\n", (int)inFile.tellg());
+	//printf("[post-seek] file at %d\n", (int)inFile.tellg());
 
 }
 
@@ -188,7 +188,7 @@ MSPM::Result::match_pos9 Primate::Extract(MSPM::Result::data_t input) {
 
 template<>
 MSPM::Result::match_pos10 Primate::Extract(MSPM::Result::data_t input) {
-	printf("params: %d, %d\n", MSPM::num_patterns + 10*segment_bytes_lg2, ((1 << (segment_bytes_lg2+1)) - 1));
+	//printf("params: %d, %d\n", MSPM::num_patterns + 10*segment_bytes_lg2, ((1 << (segment_bytes_lg2+1)) - 1));
 	return (MSPM::Result::match_pos10)((input >> (MSPM::num_patterns + 10*segment_bytes_lg2)) & ((1 << (segment_bytes_lg2+1)) - 1));
 }
 
@@ -199,7 +199,7 @@ MSPM::Result::match_pos11 Primate::Extract(MSPM::Result::data_t input) {
 
 template<>
 MSPM::Result::match_pos12 Primate::Extract(MSPM::Result::data_t input) {
-	printf("params: %d, %d\n", MSPM::num_patterns + 12*segment_bytes_lg2, ((1 << (segment_bytes_lg2+1)) - 1));
+	//printf("params: %d, %d\n", MSPM::num_patterns + 12*segment_bytes_lg2, ((1 << (segment_bytes_lg2+1)) - 1));
 	return (MSPM::Result::match_pos12)((input >> (MSPM::num_patterns + 12*segment_bytes_lg2)) & ((1 << (segment_bytes_lg2+1)) - 1));
 }
 

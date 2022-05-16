@@ -158,7 +158,7 @@ struct MSPM {
       case Op::configure: {
         char cstr[pattern_size+1];
         reg2str(str, cstr);
-        printf("[configure]loading %s into index %d\n", cstr, idx);
+        //printf("[configure]loading %s into index %d\n", cstr, idx);
         patternStore[idx] = cstr;
         break;
       }
@@ -180,17 +180,17 @@ struct MSPM {
             }
             int pos = inStr.find(patternStr);
             if(pos != std::string::npos) {
-              printf("detected string %d, pos %d, %s in %s at \n", i, pos+patternStr.length(), patternStr.c_str(), inStr.c_str());
-              printf("place at %d \n", (num_patterns + i*segment_bytes_lg2));
+              //printf("detected string %d, pos %d, %s in %s at \n", i, pos+patternStr.length(), patternStr.c_str(), inStr.c_str());
+              //printf("place at %d \n", (num_patterns + i*segment_bytes_lg2));
               out |= 1 << i;
               // this is hacky
-              printf("WERJWEIOPRJWE\n");
-              printf("\n");
-              printWideReg((Segment)out);
+              //printf("WERJWEIOPRJWE\n");
+              //printf("\n");
+              //printWideReg((Segment)out);
               out |= (((Result::data_t)((pos + patternStr.length()))) << (num_patterns + i*segment_bytes_lg2));
-              printf("P{L:S\n");
-              printWideReg((Segment)(((Result::data_t)((pos + patternStr.length()))) << (num_patterns + i*segment_bytes_lg2)));
-              printf("\n");
+              //printf("P{L:S\n");
+              //printWideReg((Segment)(((Result::data_t)((pos + patternStr.length()))) << (num_patterns + i*segment_bytes_lg2)));
+              //printf("\n");
             }
         }
         return out;
