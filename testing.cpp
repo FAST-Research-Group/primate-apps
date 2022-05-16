@@ -45,6 +45,7 @@ PORC::InputT::data_t Primate::InputRead<PORC::InputT>() {
 	}
 	if(!inFile){ 
 		printf("AHHHHH\n");
+		exit(0);
 		return (PORC::InputT::data_t)0;
 	}
 	char strSegment[segment_bytes+1];
