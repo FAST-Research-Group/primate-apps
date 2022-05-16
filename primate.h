@@ -79,9 +79,10 @@ concept Program = requires(T p) {
  */
 template<Program P>
 void Launch(P& program) {
+  program._init = false;
   while (!program._done) {
     if (!program._init) {
-      program._init = false;
+      program._init = true;
       program.InitThread();
     }
     else {

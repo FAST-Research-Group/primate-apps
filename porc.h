@@ -36,6 +36,7 @@ using Idx = UInt<idx_size>;
 Segment str2reg(char* strSegment);
 
 void reg2str(Segment inReg, char* strSegment); 
+void printWideReg(Segment inReg);
 
 
 
@@ -98,7 +99,7 @@ struct DNS {
  * Blue function objects
  */
 // I could not put this inside the MSPM and i've wasted an hour on this.
-static std::vector<std::string> patternStore = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+static std::vector<std::string> patternStore = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
 
 struct MSPM {
   /* types */
@@ -107,7 +108,7 @@ struct MSPM {
   using pattern_idx_t = UInt<num_patterns_lg2>;
   using pattern_vec_t = UInt<num_patterns>;
 
-  static constexpr u32 pattern_bytes_lg2 = 5;
+  static constexpr u32 pattern_bytes_lg2 = 6;
   static constexpr u32 pattern_bytes = 1 << pattern_bytes_lg2;
   static constexpr u32 pattern_size = pattern_bytes * 8;
   using pattern_byte_idx_t = UInt<pattern_bytes_lg2>;
@@ -150,33 +151,49 @@ struct MSPM {
         // patternStore = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
         patternStore.clear();
         for(int i = 0; i < num_patterns; i++) {
-          patternStore.push_back(0);
+          patternStore.push_back("");
         }
         break;
       }
       case Op::configure: {
-        char cstr[pattern_size];
+        char cstr[pattern_size+1];
         reg2str(str, cstr);
+        printf("[configure]loading %s into index %d\n", cstr, idx);
         patternStore[idx] = cstr;
         break;
       }
       case Op::match: {
         // Convert the input segment into a cstr
-        char cstr[pattern_size];
+        char cstr[segment_bytes+1];
         reg2str(str, cstr);
+        cstr[segment_bytes] = '\0';
         // convert to a regular str so we can use stl magic
         std::string inStr = cstr;
         Result::data_t out = 0;
         for(int i = 0; i < num_patterns; i++) {
             // grab the stored string
+            // printf("i: %d\n", i);
+            // std::cout << patternStore[i] << "\n";
             std::string patternStr = patternStore[i];
+            if(patternStr == "") {
+              continue;
+            }
             int pos = inStr.find(patternStr);
             if(pos != std::string::npos) {
+              printf("detected string %d, pos %d, %s in %s at \n", i, pos+patternStr.length(), patternStr.c_str(), inStr.c_str());
+              printf("place at %d \n", (num_patterns + i*segment_bytes_lg2));
               out |= 1 << i;
               // this is hacky
-              out |= (pos & 0b11111) << (num_patterns + i*segment_bytes_lg2);
+              printf("WERJWEIOPRJWE\n");
+              printf("\n");
+              printWideReg((Segment)out);
+              out |= (((Result::data_t)((pos + patternStr.length()))) << (num_patterns + i*segment_bytes_lg2));
+              printf("P{L:S\n");
+              printWideReg((Segment)(((Result::data_t)((pos + patternStr.length()))) << (num_patterns + i*segment_bytes_lg2)));
+              printf("\n");
             }
         }
+        return out;
         break;
       }
 
@@ -210,24 +227,65 @@ struct MSPM {
 
 struct Num {
   /* types */
-  static constexpr u32 num_bytes_lg2 = 8;
+  static constexpr u32 num_bytes_lg2 = 16;
   static constexpr u32 num_bytes = 1 << num_bytes_lg2;
   using num_t = UInt<num_bytes>;
+  using found_t = UInt<1>;
 
   #pragma primate reg
   struct Result {
     //TODO: Ask alex about typing
-    using data_t = UInt<num_bytes + segment_bytes>;
+    using data_t = UInt<num_bytes_lg2+segment_bytes_lg2+1>;
     RField(num_t, num);
     RField(SegmentIdx, pos);
+    RField(found_t, found);
   };
   static_assert(Reg<Result>);
 
   /* blue functions */
   #pragma primate blue latch_num_ascii 1 1
   static Result::data_t convert_ascii(Segment str) {
-    return 0;
+    // This is the worst possible way to do this :)
+    Result::data_t out = 0;
+    int pow = 0;
+    char cstr[MSPM::pattern_size+1];
+    cstr[MSPM::pattern_size] = '\0';
+    reg2str(str, cstr);
+    // printf("[ascii_convert] %s\n", cstr);
+    for(int i = 0; i <= 10; i++) {
+      if(cstr[i] < '0' || cstr[i] > '9') {
+        cstr[i] = 0;
+        break;
+      } else {
+        out = out*10 + (cstr[i]-'0');
+      }
+    }
+    return out;
   }
+
+   /* blue functions */
+  #pragma primate blue find_num 1 1
+  static Result::data_t find_num(Segment str) {
+    // This is the worst possible way to do this :)
+    Result::data_t out = 0;
+    int pow = 0;
+    char cstr[MSPM::pattern_size+1];
+    cstr[MSPM::pattern_size] = '\0';
+    reg2str(str, cstr);
+    // printf("[ascii_find] %s\n", cstr);
+    for(int i = 0; i < segment_bytes; i++) {
+      if(cstr[i] >= '0' && cstr[i] <= '9') {
+        out = (((Segment)i) << num_bytes_lg2) | (((Segment)1 )<< (num_bytes_lg2 + segment_bytes_lg2));
+        // printf("[ascii pos] ");
+        // printWideReg(out);
+        // printf("\n");
+        return out;
+      }
+    } 
+    return out;
+  }
+
+
 };
 
 

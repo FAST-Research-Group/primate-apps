@@ -10,7 +10,11 @@ static std::ifstream inFile("in.txt");
 
 void printWideReg(PORC::InputT::data_t inReg) {
 	for(int i = 0; i < segment_size; i++) {
-		printf("%c", (int)(0xFF & (inReg >> (8*i))));
+		if(i%4 == 0) {
+			printf(" [%d] ", i);
+		}
+		printf("%x", (int)(0x1 & (inReg >> (i))));
+		
 	}
 }
 
@@ -23,9 +27,11 @@ Segment str2reg(char* strSegment) {
 }
 
 void reg2str(Segment inReg, char* strSegment) {
-	for(int i = segment_size; i >= 0; i--) {
+	for(int i = segment_bytes; i >= 0; i--) {
 		strSegment[i] = (0xFF & (inReg >> (8*i)));
 	}
+	strSegment[segment_size + 1] = '\0';
+	
 }
 
 
@@ -41,25 +47,24 @@ PORC::InputT::data_t Primate::InputRead<PORC::InputT>() {
 		printf("AHHHHH\n");
 		return (PORC::InputT::data_t)0;
 	}
-	char strSegment[segment_size+1];
+	char strSegment[segment_bytes+1];
 	int startPos = inFile.tellg();
-	printf("[pre-read] file at %d\n", (int)inFile.tellg());
-	inFile.read(&strSegment[0], segment_size);
-	strSegment[segment_size] = '\0';
+	// printf("[pre-read] file at %d\n", (int)inFile.tellg());
+	inFile.read(&strSegment[0], segment_bytes);
+	strSegment[segment_bytes] = '\0';
 	inFile.seekg(startPos);
-	printf("[post-read] file at %d\n", (int)inFile.tellg());
+	// printf("[post-read] file at %d\n", (int)inFile.tellg());
 	PORC::InputT::data_t out = 0;
 
 	// for(int i = 0; i < segment_size; i++) {
 	// 	out = (out << 8) | ((int)strSegment[i]);
 	// }
+	// strSegment = "1234";
 	out = str2reg(strSegment);
-	char str2[segment_size+1];
+	// char str2[segment_size+1] = "1234";
+	// out = str2reg(str2);
 	// printf("out: %c, str: %s\n", out, strSegment);
-	printf("out: ");
-	printWideReg(out);
-	reg2str(out, str2);
-	printf(", str: %s\n", str2);
+	printf("str: %s, %d\n", strSegment, segment_size);
 	// printf("[post-seek] file at %d\n", (int)inFile.tellg());
 	return out;
 }
@@ -79,7 +84,7 @@ void Primate::InputSeek(u32 num_bytes) {
 //Output Testing Functions
 template<>
 void Primate::OutputWrite<PORCOutput>(PORCOutput::data_t data) {
-	
+	printf("[IDX] %d\n", data);
 }
 
 template<>
@@ -128,97 +133,101 @@ DNS::Record::type Primate::Extract(PORC::InputT::data_t input) {
 
 template<>
 MSPM::Result::match_vec Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_vec)0;
+	return (MSPM::Result::match_vec)((input & ((1 << MSPM::num_patterns) - 1)));
 }
 
 template<>
 MSPM::Result::match_pos0 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos0)0;
+	return (MSPM::Result::match_pos0)((input >> MSPM::num_patterns) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos1 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos1)0;
+	return (MSPM::Result::match_pos1)((input >> (MSPM::num_patterns + segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos2 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos2)0;
+	return (MSPM::Result::match_pos2)((input >> (MSPM::num_patterns + 2*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos3 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos3)0;
+	return (MSPM::Result::match_pos3)((input >> (MSPM::num_patterns + 3*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos4 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos4)0;
+	return (MSPM::Result::match_pos4)((input >> (MSPM::num_patterns + 4*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos5 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos5)0;
+	return (MSPM::Result::match_pos5)((input >> (MSPM::num_patterns + 5*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos6 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos6)0;
+	return (MSPM::Result::match_pos6)((input >> (MSPM::num_patterns + 6*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos7 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos7)0;
+	return (MSPM::Result::match_pos7)((input >> (MSPM::num_patterns + 7*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
-
 template<>
 MSPM::Result::match_pos8 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos8)0;
+	return (MSPM::Result::match_pos8)((input >> (MSPM::num_patterns + 8*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos9 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos9)0;
+	return (MSPM::Result::match_pos9)((input >> (MSPM::num_patterns + 9*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos10 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos10)0;
+	printf("params: %d, %d\n", MSPM::num_patterns + 10*segment_bytes_lg2, ((1 << (segment_bytes_lg2+1)) - 1));
+	return (MSPM::Result::match_pos10)((input >> (MSPM::num_patterns + 10*segment_bytes_lg2)) & ((1 << (segment_bytes_lg2+1)) - 1));
 }
 
 template<>
 MSPM::Result::match_pos11 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos11)0;
+	return (MSPM::Result::match_pos11)((input >> (MSPM::num_patterns + 11*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos12 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos12)0;
+	printf("params: %d, %d\n", MSPM::num_patterns + 12*segment_bytes_lg2, ((1 << (segment_bytes_lg2+1)) - 1));
+	return (MSPM::Result::match_pos12)((input >> (MSPM::num_patterns + 12*segment_bytes_lg2)) & ((1 << (segment_bytes_lg2+1)) - 1));
 }
 
 template<>
 MSPM::Result::match_pos13 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos13)0;
+	return (MSPM::Result::match_pos13)((input >> (MSPM::num_patterns + 13*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos14 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos14)0;
+	return (MSPM::Result::match_pos14)((input >> (MSPM::num_patterns + 14*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 MSPM::Result::match_pos15 Primate::Extract(MSPM::Result::data_t input) {
-	return (MSPM::Result::match_pos15)0;
+	return (MSPM::Result::match_pos15)((input >> (MSPM::num_patterns + 15*segment_bytes_lg2)) & ((1 << segment_bytes_lg2) - 1));
 }
 
 template<>
 Num::Result::num Primate::Extract(Num::Result::data_t input) {
-	return (Num::Result::num)0;
+	return (Num::Result::num)(input);
 }
 
 template<>
 Num::Result::pos Primate::Extract(Num::Result::data_t input) {
-	return (Num::Result::pos)0;
+	return (Num::Result::pos)((input << 1) >> (Num::num_bytes_lg2+1));
 }
 
-
+template<>
+Num::Result::found Primate::Extract(Num::Result::data_t input) {
+	return (Num::Result::found)(input >> (Num::num_bytes_lg2 + segment_bytes_lg2));
+}

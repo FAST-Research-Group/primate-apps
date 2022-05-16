@@ -1,6 +1,7 @@
 #include "porc.h"
 
 void PORC::InitThread() {
+    printf("initializing\n");
     MSPM::configure(0, 2, MSPM::str_to_pattern("\r\n"));
     MSPM::configure(1, 1, MSPM::str_to_pattern("\n"));
     /* POP3 */
@@ -27,7 +28,7 @@ void PORC::ServiceThread() {
 
   InputT::data_t input = InputRead<InputT>();
   ProtocolPort port = (ProtocolPort) Extract<Metadata::port>(input);
-  InputSeek(port_bytes);
+  // InputSeek(port_bytes);
 
   switch (port) {
     case ProtocolPort::DNS: {
@@ -192,30 +193,44 @@ void PORC::ServiceThread() {
 
       State state = State::mode;
       Idx idx = 0;
+      Idx content_length = 0;
 
       while (true) {
         InputT::data_t input = InputRead<InputT>();
-        Idx content_length = 0;
-        SegmentIdx offset;
+        SegmentIdx offset = 0;
 
         switch (state) {
           case State::mode: {
+            content_length = 0; // reset content_length 
             printf("[State] HTTP::mode\n");
             MSPM::Result::data_t match = MSPM::match(input);
             MSPM::pattern_vec_t match_vec = (MSPM::pattern_vec_t) Extract<MSPM::Result::match_vec>(match);
+            // printf("match result: ");
+            // printWideReg(match >> 66);
+            // printf("\n");
 
             if ((match_vec & (MSPM::pattern_vec_t) 0x1c00) != 0) {
-              if ((match_vec & (MSPM::pattern_vec_t) (1 << 12)) != 0) {
+              if ((match_vec & (MSPM::pattern_vec_t) (1 << 10)) != 0) {
+                MSPM::Result::match_pos10 pos = Extract<MSPM::Result::match_pos10>(match);
+                offset = (SegmentIdx) pos;
+                 printf("result of 10: %d\n", pos);
+
+                char inputStr[MSPM::pattern_bytes+1];
+                reg2str(input, inputStr);
+                // printf("Content length at pos %d\n", pos);
+
+                inputStr[MSPM::pattern_bytes] = '\0';
+                // printf("input str: %s\n", inputStr);
+                state = State::m_len;
+              }
+              else if ((match_vec & (MSPM::pattern_vec_t) (1 << 12)) != 0) {
                 MSPM::Result::match_pos12 pos = Extract<MSPM::Result::match_pos12>(match);
+                printf("aAHhH: \n");
+               printWideReg((Segment)match);
+                printf("\nnewline offset %d\n", pos);
                 offset = (SegmentIdx) pos;
 
                 state = State::end;
-              }
-              else if ((match_vec & (MSPM::pattern_vec_t) (1 << 10)) != 0) {
-                MSPM::Result::match_pos10 pos = Extract<MSPM::Result::match_pos10>(match);
-                offset = (SegmentIdx) pos;
-
-                state = State::m_len;
               }
               else if ((match_vec & (MSPM::pattern_vec_t) (1 << 11)) != 0) {
                 MSPM::Result::match_pos11 pos = Extract<MSPM::Result::match_pos11>(match);
@@ -225,20 +240,32 @@ void PORC::ServiceThread() {
               }
             }
             else {
-              offset = segment_bytes;
+              offset = segment_bytes >> 1;
             }
           }
           break;
 
           case State::m_len: {
             printf("[State] HTTP::m_len\n");
-            Num::Result::data_t num_result = Num::convert_ascii(input);
-            Num::Result::num num = Extract<Num::Result::num>(num_result);
-            Num::Result::pos pos = Extract<Num::Result::pos>(num_result);
-            content_length = (Num::num_t) num;
-            offset = (SegmentIdx) pos;
+            Num::Result::data_t pos_result = Num::find_num(input);
+            Num::Result::pos pos = Extract<Num::Result::pos>(pos_result);
+            Num::Result::found found = Extract<Num::Result::found>(pos_result);
+            printf("pos: %d, found: %d", pos, found);
+            if((int)found == 1 && (int)pos == 0) {
+              Num::Result::data_t num_result = Num::convert_ascii(input);
+              Num::Result::num num = Extract<Num::Result::num>(num_result);
+              content_length = (Num::num_t) num;
+              printf("latched %d\n", content_length);
+              offset = 0;
+              state = State::m_len_hd;
+            } else if((int)found == 1) {
+              offset = (SegmentIdx)pos;
+            } else {
+             
+              offset = segment_bytes >> 1;
 
-            state = State::m_len_hd;
+            }
+            
           }
           break;
 
@@ -249,9 +276,9 @@ void PORC::ServiceThread() {
 
             if ((match_vec & (MSPM::pattern_vec_t) (1 << 12)) != 0) {
               MSPM::Result::match_pos12 pos = Extract<MSPM::Result::match_pos12>(match);
-
-              idx += content_length;
-              offset = (SegmentIdx) pos;
+              printf("ADDING CONTENT %d\n", content_length);
+              // idx += content_length;
+              offset = ((SegmentIdx)pos)+((SegmentIdx)content_length);
               state = State::end;
             }
             else {
@@ -278,13 +305,14 @@ void PORC::ServiceThread() {
             printf("[State] HTTP::end\n");
             OutputWrite<OutputT>(idx);
             OutputSeek(idx_bytes);
-
+            // offset=0;
             state = State::mode;
           }
           break;
         }
 
         idx += offset;
+        printf("advancing %d bytes\n", offset);
         InputSeek((u32)offset);
       }
     }
