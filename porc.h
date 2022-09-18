@@ -227,7 +227,7 @@ struct MSPM {
 
 struct Num {
   /* types */
-  static constexpr u32 num_bytes_lg2 = 16;
+  static constexpr u32 num_bytes_lg2 = 6;
   static constexpr u32 num_bytes = 1 << num_bytes_lg2;
   using num_t = UInt<num_bytes>;
   using found_t = UInt<1>;
